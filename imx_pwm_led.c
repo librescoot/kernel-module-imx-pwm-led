@@ -25,7 +25,7 @@
  ******************************************************************************/
 
 #include "pwm_led.h"
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <linux/atomic.h>
 #include <linux/clk.h>
 #include <linux/delay.h>
@@ -40,7 +40,7 @@
 #include <linux/of_device.h>
 #include <linux/of_gpio.h>
 #include <linux/of_irq.h>
-#include <linux/platform_data/dma-imx-sdma.h>
+#include <linux/dma/imx-dma.h>
 #include <linux/platform_data/epit-imx.h>
 #include <linux/platform_device.h>
 #include <linux/sched.h>
@@ -1903,7 +1903,7 @@ failed_get_clk:
 	return ret;
 }
 
-static int imx_pwm_led_remove(struct platform_device *pdev)
+static void imx_pwm_led_remove(struct platform_device *pdev)
 {
 	struct imx_pwm_led *self = platform_get_drvdata(pdev);
 	(void)stop_led(self);
@@ -1915,17 +1915,15 @@ static int imx_pwm_led_remove(struct platform_device *pdev)
 	if (self->led_idx == 0) {
 		remove_first_dev(pdev);
 	}
-	return 0;
 }
 
 static struct platform_driver imx_pwm_led_driver = {
     .driver = {
         .name = "imx-pwm-led",
-        .owner = THIS_MODULE,
         .of_match_table = imx_pwm_led_dt_ids,
     },
     .probe = imx_pwm_led_probe,
-    .remove = imx_pwm_led_remove,
+    .remove_new = imx_pwm_led_remove,
 };
 
 /*******************************************************************************
