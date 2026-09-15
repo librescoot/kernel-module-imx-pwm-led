@@ -58,7 +58,7 @@
 #define ARG_ACTIVE            4 /* SDMA input arg 'active': register 4 */
 #define ARG_PRELOAD           6 /* SDMA input arg 'active': register 6 */
 #define ARG_END               7 /* SDMA input arg 'end': register 7 */
-#define DEFAULT_ACTIVE        1 /* Default 'active' value: true */
+#define DEFAULT_ACTIVE        0 /* Keep outputs off until userspace activates them */
 #define DEFAULT_ADAPTIVE      0 /* Default 'adaptive' value: false */
 #define MAX_PWM_PRESCALER     4095
 #define MAX_PWM_REPEAT        3
