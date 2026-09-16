@@ -1092,22 +1092,40 @@ out:
 static int imx_pwm_led_dev_close(struct inode *inode, struct file *filp)
 {
 	uint i;
+	pid_t owner_pid;
 	DEV_SELF_FROM_FILP(filp);
+
+	/*
+	 * Do not hold an LED lock while taking a fade or cue lock. PLAY_CUE takes
+	 * those locks in the opposite order (cue first, then every participating
+	 * LED), so the old close path could deadlock with a cue spanning this LED.
+	 *
+	 * Clear the device ownership first. The releasing task remains alive, so
+	 * its PID cannot be reused while the object ownership is cleaned up. A new
+	 * opener may proceed, and the per-object locks serialize it with cleanup.
+	 */
 	mutex_lock(&self->lock);
 	dev_dbg(dev, "close: " DEVICE_PATH "%s", self->dev_name);
+	owner_pid = self->owner_pid;
+	self->owner_pid = 0;
+	self->writing = 0;
+	mutex_unlock(&self->lock);
+
+	/* No object ownership exists in PERM_MODE_NO_OWNER. In particular, do not
+	 * mistake every unowned object (owner_pid == 0) for one owned by this file.
+	 */
+	if (owner_pid == 0)
+		return 0;
+
 	/* Automatically close any fades and cues that were opened: */
 	for (i = 0; i < max_fades; i++) {
-		if (g_data.fades[i].owner_pid == self->owner_pid) {
+		if (g_data.fades[i].owner_pid == owner_pid)
 			close_fade(self, i);
-		}
 	}
 	for (i = 0; i < max_cues; i++) {
-		if (g_data.cues[i].owner_pid == self->owner_pid) {
+		if (g_data.cues[i].owner_pid == owner_pid)
 			close_cue(self, i);
-		}
 	}
-	self->owner_pid = 0;
-	mutex_unlock(&self->lock);
 	return 0;
 }
 
